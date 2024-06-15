@@ -1,0 +1,12 @@
+using Microsoft.AspNetCore.Mvc;
+using WebApplication1.Models;
+
+namespace WebApplication1.Clients
+{
+    public interface IDynamoDBClient
+    {
+        public Task<Book_DB> GetDataByBook(string book);
+        public Task<bool> PostDataToDB(Book_DB data);
+        public Task<List<Book_DB>> GetAll();
+    }
+}
