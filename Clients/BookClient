@@ -1,0 +1,30 @@
+using Newtonsoft.Json;
+using WebApplication1.Models;
+using WebApplication1.Clients;
+
+namespace WebApplication1.Clients
+{
+    public class BookClient
+    {
+        private static string _address;
+        private static string _apikey;
+        private static HttpClient _client;
+
+        public BookClient()
+        {
+            _address = Constants.Address;
+            _apikey = Constants.ApiKey;
+            _client = new HttpClient();
+            _client.BaseAddress = new Uri(_address);
+        }
+
+        public async Task<Rootobject> GetBookAsync(string a)
+        {
+            var responce = await _client.GetAsync($"/search.json?q={a}");
+            responce.EnsureSuccessStatusCode();
+            var content = responce.Content.ReadAsStringAsync().Result;
+            var result = JsonConvert.DeserializeObject<Rootobject>(content);
+            return result;
+        }
+    }
+}
