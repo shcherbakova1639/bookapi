@@ -1,0 +1,122 @@
+using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.Model;
+using Microsoft.AspNetCore.Mvc;
+using System.Net.WebSockets;
+using WebApplication1.Clients;
+using WebApplication1.Extensions;
+using WebApplication1.Models;
+using Amazon.DynamoDBv2.DataModel;
+using Amazon.DynamoDBv2.DocumentModel;
+using System.Threading.Tasks;
+
+
+namespace WebApplication1.Controllers
+{
+    [ApiController]
+    [Route("[controller]")]
+    public class SearchController : ControllerBase
+    {
+        private readonly ILogger<SearchController> _logger;
+        private readonly BookClient _bookClient;
+        private readonly IDynamoDBClient _dynamoDbClient;
+        private readonly IDynamoDBContext _dynamoDBContext;
+
+
+        public SearchController(ILogger<SearchController> logger, BookClient bookClient, IDynamoDBClient dynamoDBClient, IDynamoDBContext dynamoDBContext)
+        {
+            _logger = logger;
+            _bookClient = bookClient;
+            _dynamoDbClient = dynamoDBClient;
+            _dynamoDBContext = dynamoDBContext;
+
+        }
+
+        [HttpGet("CountWorks")]
+        public async Task<int> GetCountAuthorsWorks(string author)
+        {
+            var result =await _bookClient.GetBookAsync(author);
+            return result.numFound;
+        }
+
+
+        [HttpGet("GetQuote")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+
+        public async Task<IActionResult> GetDataByBook([FromQuery] string book)
+        {
+            var result = await _dynamoDbClient.GetDataByBook(book);
+
+            if (result == null)
+                return NotFound("Record does not exist");
+
+            var bookResponse = new BookResponse
+            {
+                book = result.book,
+                Title = result.Title,
+                Author = result.Author,
+                Quote = result.Quote,
+            };
+
+            return Ok(bookResponse);
+        }
+
+
+        [HttpPost("addQuote")]
+        public async Task<IActionResult> AddQuote([FromBody] BookResponse book)
+        {
+            var data = new Book_DB
+            {
+                book = book.book,
+                Title = book.Title,
+                Author = book.Author,
+                Quote = book.Quote
+            };
+
+            var result = await _dynamoDbClient.PostDataToDB(data);
+
+            if(result == false)
+            {
+                return BadRequest("Cannot insert. See console log");
+            }
+          
+            return Ok("Value has been successfully added to DB");
+        }
+
+        [HttpGet("GetAll")]
+        public async Task<IActionResult> GetAll()
+        {
+            var response = await _dynamoDbClient.GetAll();
+
+            if (response == null)
+                return NotFound("No records in db");
+            var result = response
+                .Select(x => new BookResponse()
+                {
+                    book = x.book,
+                    Title = x.Title,
+                    Author = x.Author,
+                    Quote = x.Quote
+                })
+                .ToList();
+            return Ok(result);
+        }
+
+        [HttpDelete("delete")]
+        public async Task<IActionResult> Delete([FromQuery] string book)
+        {
+            var item = await _dynamoDBContext.LoadAsync<Book_DB>(book);
+
+            if (item == null)
+            {
+                return NotFound("Book not found.");
+            }
+
+            await _dynamoDBContext.DeleteAsync(item);
+
+
+            return Ok("Quote was deleted");
+        }
+
+    }
+}
