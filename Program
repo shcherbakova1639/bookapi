@@ -1,0 +1,53 @@
+using Amazon;
+using Amazon.DynamoDBv2;
+using Amazon.Extensions.NETCore.Setup;
+using Amazon.Runtime;
+using Microsoft.Extensions.DependencyInjection;
+using WebApplication1;
+using WebApplication1.Clients;
+using Amazon.DynamoDBv2.DataModel;
+
+internal class Program
+{
+    private static void Main(string[] args)
+    {
+        var builder = WebApplication.CreateBuilder(args);
+
+        builder.Services.AddControllers();
+
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen();
+
+        builder.Services.AddTransient<BookClient>();
+
+        var credentials = new BasicAWSCredentials(Constants.AccessKey, Constants.SecretKey);
+        var config = new AmazonDynamoDBConfig
+        {
+            RegionEndpoint = RegionEndpoint.USEast2
+        };
+        //builder.Services.AddAWSService<IAmazonDynamoDB>(config);
+
+        builder.Services.AddSingleton<IAmazonDynamoDB>(sp =>
+        {
+            return new AmazonDynamoDBClient(credentials, config);
+        });
+        builder.Services.AddSingleton<IDynamoDBClient, DynamoDBClient>();
+        builder.Services.AddSingleton<IDynamoDBContext, DynamoDBContext>();
+
+        var app = builder.Build();
+
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI();
+        }
+
+        app.UseHttpsRedirection();
+
+        app.UseAuthorization();
+
+        app.MapControllers();
+
+        app.Run();
+    }
+}
