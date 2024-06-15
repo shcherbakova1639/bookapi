@@ -1,0 +1,11 @@
+namespace WebApplication1
+{
+    public class Constants
+    {
+        public static string Address = "https://openlibrary.org";
+        public static string ApiKey = "*****";
+        public static string AccessKey = "*****";
+        public static string SecretKey = "*****";
+        public static string TableName = "BookApi";
+    }
+}
