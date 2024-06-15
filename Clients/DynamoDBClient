@@ -1,0 +1,94 @@
+using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.Model;
+using System;
+using WebApplication1.Extensions;
+using WebApplication1.Models;
+
+namespace WebApplication1.Clients
+{
+    public class DynamoDBClient : IDynamoDBClient, IDisposable
+    {
+        public string _tableName;
+        private readonly IAmazonDynamoDB _dynamoDb;
+
+
+        public DynamoDBClient(IAmazonDynamoDB dynamoDB)
+        {
+            _dynamoDb = dynamoDB;
+            _tableName = Constants.TableName;
+        }
+
+
+        public async Task<Book_DB> GetDataByBook(string book)
+        {
+            var item = new GetItemRequest
+            {
+                TableName = _tableName,
+                Key = new Dictionary<string, AttributeValue>
+                {
+                    { "book",  new AttributeValue{S = book} }
+                }
+            };
+            var responce = await _dynamoDb.GetItemAsync(item);
+
+            var result = responce.Item.ToClass<Book_DB>();
+
+            return result;
+        }
+
+        public async Task<bool> PostDataToDB(Book_DB data)
+        {
+            var reqest = new PutItemRequest
+            {
+                TableName= _tableName,
+                Item = new Dictionary<string, AttributeValue>
+                {
+                    {"book", new AttributeValue{S = data.book} },
+                    {"Title", new AttributeValue{S = data.Title} },
+                    {"Author", new AttributeValue{S = data.Author} },
+                    {"Quote", new AttributeValue{S = data.Quote} },
+                }
+            };
+
+            try
+            {
+                var response = await _dynamoDb.PutItemAsync(reqest);
+                return response.HttpStatusCode == System.Net.HttpStatusCode.OK;
+            }
+            catch(Exception e)
+            { 
+                Console.WriteLine("Your error \n" + e);
+                return false;
+            }
+        }
+
+       
+        public async Task<List<Book_DB>> GetAll()
+        {
+            var result = new List<Book_DB>();
+
+            var reqest = new ScanRequest
+            {
+                TableName = _tableName,
+            };
+
+            var response = await _dynamoDb.ScanAsync(reqest);
+
+            if (response.Items == null || response.Items.Count == 0)
+                return null;
+            foreach (Dictionary<string, AttributeValue> item in response.Items)
+            {
+                result.Add(item.ToClass<Book_DB>());
+            }
+            return result;
+        }
+
+
+        
+
+        public void Dispose()
+        {
+            _dynamoDb.Dispose();
+        }
+    }
+}
