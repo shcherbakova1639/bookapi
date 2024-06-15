@@ -1,0 +1,28 @@
+namespace WebApplication1.Models
+{
+
+    public class Rootobject
+    {
+        public int numFound { get; set; }
+        public string q { get; set; }
+        public Book book { get; set; }
+        public Author author { get; set; }
+        public List<Book> Books { get; set; } = new List<Book>();
+
+    }
+
+    public class Book
+    {
+        public string title { get; set; }
+        public Author authors { get; set; }
+    }
+
+        public class Author
+        {
+            public string name { get; set; }
+            public string[] alternate_names { get; set; }
+            public string top_work { get; set; }
+            public int work_count { get; set; }
+            
+        }
+}
